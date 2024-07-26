@@ -1,0 +1,101 @@
+Sub CreateAIIVisualization()
+    Dim srcWB As Workbook
+    Dim destWB As Workbook
+    Dim srcWS As Worksheet
+    Dim destWS As Worksheet
+    Dim wsName As String
+    Dim lastRow As Long
+    Dim i As Integer
+    Dim chartObj As ChartObject
+    Dim chartTitle As String
+    Dim series As Series
+    
+    ' Define the source and destination workbooks
+    Set srcWB = Workbooks("Current A-II.xlsx")
+    Set destWB = Workbooks("viz.xlsx")
+    
+    ' Loop through each worksheet in the source workbook
+    For Each srcWS In srcWB.Worksheets
+        If srcWS.Name <> "Cover Page" And srcWS.Name <> "Consolidated Report" Then
+            ' Add a new worksheet to the destination workbook with the same name as the source worksheet
+            Set destWS = destWB.Sheets.Add(After:=destWB.Sheets(destWB.Sheets.Count))
+            destWS.Name = srcWS.Name
+            
+            ' Set the headers in the destination worksheet
+            destWS.Range("A2").Value = "FY"
+            destWS.Range("B2").Value = "Total PAA"
+            destWS.Range("C2").Value = "Total Requirement"
+            destWS.Range("D2").Value = "TAI"
+            destWS.Range("E2").Value = "TII"
+            
+            ' Copy and transpose the specified ranges from the source worksheet to the destination worksheet
+            srcWS.Range("G2:AJ2").Copy
+            destWS.Range("A3").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+            
+            srcWS.Range("G7:AJ7").Copy
+            destWS.Range("B3").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+            
+            srcWS.Range("G10:AJ10").Copy
+            destWS.Range("C3").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+            
+            srcWS.Range("G40:AJ40").Copy
+            destWS.Range("D3").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+            
+            srcWS.Range("G49:AJ49").Copy
+            destWS.Range("E3").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+            
+            ' Create the custom combination chart
+            Set chartObj = destWS.ChartObjects.Add(Left:=100, Width:=500, Top:=50, Height:=300)
+            With chartObj.Chart
+                .SetSourceData Source:=destWS.Range("A2:E32")
+                
+                ' Set the chart type and assign the series correctly
+                .ChartType = xlColumnStacked
+                .SeriesCollection.NewSeries
+                .SeriesCollection(1).Name = "TAI"
+                .SeriesCollection(1).Values = destWS.Range("D3:D32")
+                .SeriesCollection(1).Format.Fill.ForeColor.RGB = RGB(0, 176, 80) ' Green color for TAI
+                
+                .SeriesCollection.NewSeries
+                .SeriesCollection(2).Name = "TII"
+                .SeriesCollection(2).Values = destWS.Range("E3:E32")
+                .SeriesCollection(2).Format.Fill.ForeColor.RGB = RGB(255, 192, 0) ' Yellow color for TII
+                
+                .SeriesCollection.NewSeries
+                .SeriesCollection(3).Name = "Total PAA"
+                .SeriesCollection(3).Values = destWS.Range("B3:B32")
+                .SeriesCollection(3).ChartType = xlLine
+                .SeriesCollection(3).AxisGroup = xlSecondary
+                .SeriesCollection(3).Format.Line.ForeColor.RGB = RGB(0, 0, 255) ' Blue color for Total PAA
+                
+                .SeriesCollection.NewSeries
+                .SeriesCollection(4).Name = "Total Requirement"
+                .SeriesCollection(4).Values = destWS.Range("C3:C32")
+                .SeriesCollection(4).ChartType = xlLine
+                .SeriesCollection(4).AxisGroup = xlSecondary
+                .SeriesCollection(4).Format.Line.ForeColor.RGB = RGB(255, 0, 0) ' Red color for Total Requirement
+                
+                ' Set the chart title
+                chartTitle = srcWS.Name & " Total PAA and Total RQMT (PAA + BAA) over TAI + TII"
+                .HasTitle = True
+                .ChartTitle.Text = chartTitle
+                
+                ' Remove the secondary vertical axis
+                .Axes(xlValue, xlSecondary).Delete
+                
+                ' Delete any extra series
+                Do While .SeriesCollection.Count > 4
+                    .SeriesCollection(5).Delete
+                Loop
+            End With
+        End If
+    Next srcWS
+    
+    ' Clean up
+    Application.CutCopyMode = False
+    Set srcWB = Nothing
+    Set destWB = Nothing
+    Set srcWS = Nothing
+    Set destWS = Nothing
+    Set chartObj = Nothing
+End Sub
